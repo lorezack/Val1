@@ -1,0 +1,267 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Valentine</title>
+
+  <style>
+    *{ box-sizing:border-box }
+
+    body{
+      margin:0;
+      min-height:100vh;
+      display:grid;
+      place-items:center;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      background:#fdebed;
+      overflow:hidden;
+    }
+
+    .card{
+      width:min(900px,94vw);
+      padding:32px 24px 24px;
+      border-radius:28px;
+      background:#fff;
+      box-shadow:0 25px 60px rgba(0,0,0,.12);
+      text-align:center;
+    }
+
+    h1{
+      margin:0 0 6px;
+      font-size:40px;
+    }
+
+    p{
+      margin:0 0 18px;
+      opacity:.7;
+    }
+
+    /* === RED BOX AREA === */
+    .arena{
+      position:relative;
+      height:420px;
+      border-radius:22px;
+      overflow:hidden;
+      margin:0 auto 14px;
+      background:#f5f5f5;
+    }
+
+    /* BACKGROUND IMAGE */
+    .arena img.bg{
+      position:absolute;
+      inset:0;
+      width:100%;
+      height:100%;
+      object-fit:cover;
+      z-index:1;
+      pointer-events:none;
+      user-select:none;
+    }
+
+    /* BUTTON CARDS */
+    .btn{
+      position:absolute;
+      z-index:2;
+      background:#fff;
+      border-radius:18px;
+      padding:12px 16px;
+      width:110px;
+      font-weight:700;
+      border:0;
+      cursor:pointer;
+      box-shadow:0 12px 30px rgba(0,0,0,.18);
+    }
+
+    .msg{
+      font-weight:700;
+      min-height:22px;
+      margin-bottom:8px;
+    }
+
+    .frustrated{
+      padding:10px 16px;
+      border-radius:14px;
+      border:0;
+      background:#111;
+      color:#fff;
+      font-weight:700;
+      cursor:pointer;
+    }
+
+    /* GATE */
+    .gate{
+      position:fixed;
+      inset:0;
+      display:none;
+      place-items:center;
+      background:rgba(0,0,0,.4);
+      backdrop-filter: blur(6px);
+      z-index:50;
+    }
+
+    .gate.open{ display:grid }
+
+    .gate-card{
+      background:#fff;
+      padding:24px;
+      border-radius:20px;
+      width:min(420px,92vw);
+      box-shadow:0 20px 50px rgba(0,0,0,.2);
+      text-align:left;
+    }
+
+    .gate-card h2{ margin:0 0 6px; }
+    .hint{ font-size:13px; opacity:.7; margin-bottom:12px; }
+
+    .gate-row{
+      display:flex;
+      gap:8px;
+    }
+
+    .gate-input{
+      flex:1;
+      padding:10px;
+      border-radius:10px;
+      border:1px solid #ccc;
+      font-size:16px;
+    }
+
+    .gate-btn{
+      padding:10px 14px;
+      border-radius:10px;
+      border:0;
+      background:#111;
+      color:#fff;
+      font-weight:700;
+      cursor:pointer;
+    }
+
+    .gate-error{
+      margin-top:10px;
+      font-weight:700;
+      font-size:14px;
+      color:#b00020;
+      min-height:18px;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="card">
+    <h1>Will you be my Valentine?</h1>
+    <p>Choose wisely.</p>
+
+    <!-- RED BOX AREA -->
+    <div class="arena" id="arena">
+      <!-- BACKGROUND IMAGE -->
+      <img src="val.jpg" class="bg" alt="background">
+
+      <!-- FLOATING BUTTONS -->
+      <button class="btn" id="yesBtn">Yes</button>
+      <button class="btn" id="noBtn">No</button>
+    </div>
+
+    <div class="msg" id="msg"></div>
+
+    <button class="frustrated" id="frustratedBtn">I'm frustrated</button>
+  </div>
+
+  <!-- GATE -->
+  <div class="gate" id="gate">
+    <div class="gate-card">
+      <h2>To continue, type the date it all started</h2>
+      <p class="hint">Format: 16 02 25</p>
+
+      <div class="gate-row">
+        <input class="gate-input" id="gateInput">
+        <button class="gate-btn" id="gateGo">Continue</button>
+      </div>
+
+      <div class="gate-error" id="gateError"></div>
+    </div>
+  </div>
+
+  <script>
+    const arena = document.getElementById("arena");
+    const yesBtn = document.getElementById("yesBtn");
+    const noBtn  = document.getElementById("noBtn");
+    const msg    = document.getElementById("msg");
+
+    const gate = document.getElementById("gate");
+    const gateInput = document.getElementById("gateInput");
+    const gateGo = document.getElementById("gateGo");
+    const gateError = document.getElementById("gateError");
+    const frustratedBtn = document.getElementById("frustratedBtn");
+
+    function setPos(el,x,y){
+      el.style.left = x+"px";
+      el.style.top  = y+"px";
+    }
+
+    function randomSpot(el){
+      const r = arena.getBoundingClientRect();
+      const b = el.getBoundingClientRect();
+      const x = Math.random()*(r.width-b.width-10)+5;
+      const y = Math.random()*(r.height-b.height-10)+5;
+      setPos(el,x,y);
+    }
+
+    function placeInitial(){
+      const r = arena.getBoundingClientRect();
+      setPos(yesBtn, r.width*0.65, r.height*0.55);
+      setPos(noBtn,  r.width*0.20, r.height*0.55);
+    }
+
+    function dodge(el){
+      randomSpot(el);
+      msg.textContent = "Nope.";
+    }
+
+    function proximity(e, el){
+      const r = arena.getBoundingClientRect();
+      const mx = e.clientX - r.left;
+      const my = e.clientY - r.top;
+      const b = el.getBoundingClientRect();
+      const cx = b.left - r.left + b.width/2;
+      const cy = b.top  - r.top  + b.height/2;
+      if (Math.hypot(mx-cx,my-cy) < 110) dodge(el);
+    }
+
+    [yesBtn,noBtn].forEach(btn=>{
+      btn.addEventListener("mouseenter",()=>dodge(btn));
+      btn.addEventListener("mousemove",(e)=>proximity(e,btn));
+      btn.addEventListener("click",(e)=>{e.preventDefault(); dodge(btn);});
+      btn.addEventListener("touchstart",(e)=>{e.preventDefault(); dodge(btn);},{passive:false});
+    });
+
+    arena.addEventListener("mousemove",(e)=>{
+      proximity(e,yesBtn);
+      proximity(e,noBtn);
+    });
+
+    frustratedBtn.onclick = ()=>{
+      gate.classList.add("open");
+      gateInput.value="";
+      gateError.textContent="";
+      setTimeout(()=>gateInput.focus(),50);
+    };
+
+    gateGo.onclick = ()=>{
+      if(gateInput.value.trim()==="16 02 25"){
+        gate.classList.remove("open");
+        msg.textContent="Accepted.";
+      } else {
+        gateError.textContent="Wrong date.";
+      }
+    };
+
+    gateInput.addEventListener("keydown",e=>{
+      if(e.key==="Enter") gateGo.click();
+    });
+
+    window.addEventListener("resize",placeInitial);
+    placeInitial();
+  </script>
+</body>
+</html>
